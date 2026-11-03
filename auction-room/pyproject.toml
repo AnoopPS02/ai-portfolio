@@ -1,0 +1,22 @@
+[project]
+name = "auction-room"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "AnoopPS02", email = "anoop.purohith.04@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "ollama>=0.6.3",
+    "openai>=3.42.1",
+    "pydantic>=2.14.2",
+    "python-dotenv>=1.2.4",
+]
+
+[project.scripts]
+auction-room = "auction_room:main"
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
