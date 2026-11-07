@@ -43,7 +43,7 @@ LEFT JOIN outs o USING (player_id, season)
 BOWLING_SQL = """
 CREATE OR REPLACE VIEW bowling_season AS
 SELECT
-	d.bowler_id as bowler_id,
+	d.bowler_id as player_id,
 	p.name AS player_name,
 	m.season,
 	SUM(is_legal_ball::INT) as legal_deliveries_bowled,
