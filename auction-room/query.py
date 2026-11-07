@@ -9,11 +9,10 @@ con = duckdb.connect("data/auction_room.duckdb")
 
 #print(con.sql("DESCRIBE players"))
 
+
 print(con.sql("""
-    SELECT match_id, innings_no, count(is_legal_ball) as legal_deliveries
-    FROM deliveries
-    WHERE not is_super_over
-    AND is_legal_ball is True
-    GROUP BY match_id, innings_no
-    LIMIT 10
+    select * from batting_season
+    where season = 2016
+    order by runs desc
+    limit 10
 """).df().to_string())

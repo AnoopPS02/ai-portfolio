@@ -10,6 +10,8 @@ from pathlib import Path
 import duckdb
 import pandas as pd
 
+from auction_room.stats import create_views
+
 RAW = Path("data/raw/ipl_json")
 DB = "data/auction_room.duckdb"
 
@@ -137,6 +139,9 @@ def main():
     con.execute("CREATE OR REPLACE TABLE matches AS SELECT * FROM matches_df")
     con.execute("CREATE OR REPLACE TABLE players AS SELECT * FROM players_df")
     con.execute("CREATE OR REPLACE TABLE deliveries AS SELECT * FROM deliveries_df")
+
+    create_views(con)
+    print("views: batting_season, bowling_season")
 
     for t in ["matches", "players", "deliveries"]:
         print(t, con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0], "rows")
