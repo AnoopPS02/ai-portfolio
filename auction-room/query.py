@@ -1,5 +1,6 @@
 import duckdb
 con = duckdb.connect("data/auction_room.duckdb")
+from auction_room.team_needs import get_team_needs
 
 #print(con.sql("SHOW TABLES"))
 
@@ -10,9 +11,4 @@ con = duckdb.connect("data/auction_room.duckdb")
 #print(con.sql("DESCRIBE players"))
 
 
-print(con.sql("""
-    select * from batting_season
-    where season = 2016
-    order by runs desc
-    limit 10
-""").df().to_string())
+print(get_team_needs(con, "CSK"))

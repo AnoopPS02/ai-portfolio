@@ -4,6 +4,7 @@ Difference from chat_cli.py: there you picked the player and pasted their stats 
 up front. Here the model gets a tool and fetches whatever it needs, for any player.
 """
 import duckdb
+import time
 
 from auction_room.llm import chat
 from auction_room.tools import REGISTRY, TOOLS
@@ -14,16 +15,23 @@ MAX_STEPS = 5   # safety net: stop if the model keeps calling tools without answ
 SYSTEM_PROMPT = """You are an IPL analyst helping a franchise before the 2027 auction.
 - For any question about a player's numbers, call get_player_stats. Never answer stats from memory.
 - Answer only from what the tool returns, and quote the season and the number.
+- When you pass on a tool's result, only quote numbers that appear in it.
 - If the tool says several players match, ask the user which one they mean.
 - If the data doesn't cover the question, say so plainly in one sentence.
+- When you pass on a tool's result, only quote numbers that appear in it. Never add or calculate your own.
 - Keep answers short."""
 # Bring over your few-shot examples and the three refusal lines from chat_cli.py if you like.
 
 
 def run_turn(con, messages) -> str:
     """One user question -> as many tool calls as needed -> the final answer."""
-    for _ in range(MAX_STEPS):
+    for step in range(1, MAX_STEPS + 1):
+        start = time.time()
         r = chat(messages, tools=TOOLS)
+
+        print(f"[step {step} | model {time.time() - start:.1f}s | "
+              f"{r.prompt_eval_count} in, {r.eval_count} out]")
+
         messages.append(r.message)   # the assistant's turn, tool calls included
 
         # TODO 3: if the model made no tool calls, this is its final answer: return the text.
@@ -45,12 +53,15 @@ def run_turn(con, messages) -> str:
             name = call.function.name
             args = call.function.arguments
 
+            tool_start = time.time()
+
             findName = REGISTRY.get(name)
             if not findName:
                 result = f"No tool identified by {name}"
             else:
                 result = findName(con, **args)
-            print(f'{name} {args}')
+            #print(f'{name} {args}')
+            print(f"[tool] {name}({args}) | {time.time() - tool_start:.1f}s")
 
             messages.append({
                 "role": "tool",

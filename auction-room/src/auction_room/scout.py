@@ -93,7 +93,9 @@ Write a scout report using ONLY the stats provided.
 - risks must come from the player’s last 4 seasons
 - Every strength and risk must cite a season and an exact number from the stats.
 - Prefer recent seasons; a player's form from 10 years ago matters less.
-- "batting allrounder" only if legal_deliveries_bowled is at least 50 per season in their recent seasons; otherwise use a batter role.
+- Decide first whether the player is mainly a batter or mainly a bowler, from where his workload is.
+- "batting allrounder" only for batters who also bowled at least 50 legal balls per season recently.
+- A player whose bowling workload is much larger than his batting is a bowler: use a bowling role.
 - "finisher" only if death_balls_faced is at least 10 and death_strike_rate is at least 130 in recent seasons
 - price_band is your judgment; there is no auction price data in the stats.
 - Reply with JSON matching the schema, nothing else."""
@@ -139,6 +141,59 @@ def scout_report(con, player_id: str, player_name: str) -> PlayerScoutReport:
 
 
     raise RuntimeError(f"No valid report after {MAX_ATTEMPTS} attempts")
+
+# ---------- as an agent tool ----------
+
+def get_scout_report(con, name: str) -> str:
+    """Tool wrapper: one player's validated scout report, as JSON text for the model."""
+    matches = _find(con, name)
+    # TODO A: 0 matches or 2+ matches -> return a sentence the model can act on.
+    #         You've written exactly this in get_player_stats; reuse the same idea.
+
+    if len(matches) == 0:
+        return f"No IPL player found matching '{name}'."
+    if len(matches) > 1:
+        names = ", ".join(player_name for _, player_name in matches[:10])
+        more = f" (and {len(matches) - 10} more)" if len(matches) > 10 else ""
+        return f"Several players match '{name}': {names}{more}. Ask the user which one they mean, or for a fuller name."
+
+    player_id, player_name = matches[0]
+    try:
+        report = scout_report(con, player_id, player_name)
+    except RuntimeError as e:          # all retries failed inside scout_report
+        return f"Could not produce a valid scout report for {player_name}: {e}"
+    return report.model_dump_json()    # the validated object, back to text for the model
+
+
+GET_SCOUT_REPORT = {
+    "type": "function",
+    "function": {
+        "name": "get_scout_report",
+        # TODO B: the 3-part description. Make sure it says:
+        #   - what it returns (role, strengths and risks with evidence, price band, summary)
+        #   - use it ONLY when the user asks to scout / evaluate / assess a player for the auction
+        #   - it is slow (it runs its own model call), so don't use it for simple stat questions
+        "description": (
+            "Returns role, strengths and risks with evidence, price band, summary for one player."
+            "use it ONLY when the user asks to scout / evaluate / assess a player for the auction."
+            "it is slow (it runs its own model call), so don't use it for simple stat questions."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                # TODO C: one property, `name`, same style as get_player_stats
+                "name":{
+                    "type": "string",
+                    "description": (
+                        "Player name as the user said it. Partial names like 'Dhoni' or 'Kohli' are fine."
+                        "Some players names are abbreviated like if the user asks for Virat Kohli stats then it is similar to V Kohli"
+                    ),
+                }
+            },
+            "required": ["name"],   # TODO C
+        },
+    },
+}
 
 
 def main():
