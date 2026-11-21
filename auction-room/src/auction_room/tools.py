@@ -6,7 +6,7 @@ A tool is two things:
 The model never runs anything. It only replies "please call get_player_stats with
 {name: ..., season: ...}". Your code runs the function and sends the result back.
 """
-
+from auction_room.team_needs import GET_TEAM_NEEDS, get_team_needs
 
 def _search(con, pattern: str):
     return con.execute(
@@ -111,5 +111,5 @@ GET_PLAYER_STATS = {
     },
 }
 
-TOOLS = [GET_PLAYER_STATS]                        # what the model is shown
-REGISTRY = {"get_player_stats": get_player_stats}  # name -> the function your code runs
+TOOLS = [GET_PLAYER_STATS, GET_TEAM_NEEDS]                        # what the model is shown
+REGISTRY = {"get_player_stats": get_player_stats, "get_team_needs": get_team_needs}  # name -> the function your code runs

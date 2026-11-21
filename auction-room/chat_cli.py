@@ -91,6 +91,8 @@ Q: How many runs did he score in 2018?
 A: In 2018 he scored 455 runs at a strike rate of 150.7.
 Q: What was his top score against Mumbai?
 A: I only have season totals, so I can't answer that yet.
+Q: How much purse does GT have left?
+A: GT is left with ₹8.75 cr
 
 Keep answers short. Never present an average or strike rate as a score.
 """
