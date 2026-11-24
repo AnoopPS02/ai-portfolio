@@ -13,6 +13,6 @@ def chat(messages, think=False, stream=False, schema=None, temperature=0.2, tool
         think=think,
         stream=stream,
         format=schema,
-        options={"temperature": temperature},
+        options={"temperature": temperature, "num_ctx": 8192},
         tools = tools
     )

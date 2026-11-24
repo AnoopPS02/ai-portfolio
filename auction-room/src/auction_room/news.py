@@ -4,6 +4,7 @@ import ollama
 EMBED_MODEL = "nomic-embed-text"
 DIM = 768
 
+LAST_RESULTS: list[dict] = []
 
 def search_news(con, query: str, k: int = 5):
     """Return the k chunks most similar in meaning to `query`, best first."""
@@ -18,7 +19,7 @@ def search_news(con, query: str, k: int = 5):
     #   - pass q_vec and k as ? parameters, never in the string
     #   - round the score to 3 decimals so it's readable
     sql = """
-            SELECT title, date, url, text,
+            SELECT title, date, url, site, text,
                 ROUND(array_cosine_similarity(embedding, ?::FLOAT[768])::DOUBLE,3) AS score
             FROM news_chunks
             QUALIFY ROW_NUMBER() OVER (PARTITION BY url ORDER BY score DESC) = 1
@@ -26,6 +27,56 @@ def search_news(con, query: str, k: int = 5):
             LIMIT ?
         """
     return con.execute(sql, [q_vec, k]).df()
+
+def format_results(df) -> str:
+    """Numbered sources the model can cite as [1], [2]..."""
+    blocks = []
+    for i, r in enumerate(df.itertuples(), start=1):
+        # TODO A: one block per result, e.g.
+        #   [1] <title> (<site>, <date as YYYY-MM-DD>) <url>
+        #   <the chunk text, without the title line at the start>
+        #   Hint: the chunk text begins with the title + "\n" (that's how you built it),
+        #   so r.text[len(r.title) + 1:] is the body. str(r.date)[:10] gives YYYY-MM-DD.      
+        blocks.append(f"[{i}] {r.title} ({r.site}, {str(r.date)[:10]}) {r.url}\n{r.text[len(r.title) + 1:]}")
+
+    return "\n\n".join(blocks) if blocks else "No news found."
+
+def search_news_tool(con, query: str) -> str:
+    df = search_news(con, query, k=4)
+    LAST_RESULTS[:] = df[["title", "site", "date", "url"]].to_dict("records")
+    return format_results(df)
+
+
+SEARCH_NEWS = {
+    "type": "function",
+    "function": {
+        "name": "search_news",
+        # TODO B: the 3-part description.
+        #   Returns: news excerpts about IPL 2027 retentions, releases, trades, captaincy and
+        #            the auction (Oct 26 - Nov 19, 2026), numbered for citing
+        #   Use it for: why/what-happened/latest-news questions; anything the stats tools can't know
+        #   Doesn't have: news after Nov 19, live auction results, player stats (use the other tools)
+        "description": (
+            "Returns: news excerpts about IPL 2027 retentions, releases, trades, captaincy and the auction (Oct 26 - Nov 19, 2026), numbered for citing. "
+            "Use it for: why/what-happened/latest-news questions; anything the stats tools can't know. "
+            "Doesn't have: news after Nov 19, live auction results, player stats (use the other tools). "
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                # TODO C: one property, `query`: what to search for, in plain words
+                "query":{
+                    "type": "string",
+                    "description": (
+                        "what to search for, in plain words e.g. 'why was Mitchell Starc released'"
+                        "Which players retained by Chennai super kings"
+                    ),
+                }
+            },
+            "required": ["query"],   # TODO C
+        },
+    },
+}
 
 
 if __name__ == "__main__":

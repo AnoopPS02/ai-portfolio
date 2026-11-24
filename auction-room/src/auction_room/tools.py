@@ -112,10 +112,12 @@ GET_PLAYER_STATS = {
 
 from auction_room.team_needs import GET_TEAM_NEEDS, get_team_needs
 from auction_room.scout import GET_SCOUT_REPORT, get_scout_report
+from auction_room.news import SEARCH_NEWS, search_news_tool
 
-TOOLS = [GET_PLAYER_STATS, GET_TEAM_NEEDS, GET_SCOUT_REPORT]                        # what the model is shown
+TOOLS = [GET_PLAYER_STATS, GET_TEAM_NEEDS, GET_SCOUT_REPORT, SEARCH_NEWS]                        # what the model is shown
 REGISTRY = {
                 "get_player_stats": get_player_stats,
                 "get_team_needs": get_team_needs,
-                "get_scout_report": get_scout_report
+                "get_scout_report": get_scout_report,
+                "search_news": search_news_tool
             }  # name -> the function your code runs
